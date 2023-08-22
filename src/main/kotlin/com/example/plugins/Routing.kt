@@ -35,71 +35,42 @@ fun Application.configureRouting() {
         }
 
 
-//        get("/notes/{page}") {
-//            val pageNum = call.parameters["page"]
-//            call.respondText { "the number of note $pageNum" }
+
+
+//        get("/headers") {
+//            call.response.headers.append("server-nane", "shopping")
+//            call.response.headers.append("My-Name", "Mohamed")
+//            call.respondText("Success")
 //        }
 
-        post("/training/login") {
-            val userInfo = call.receive<UserInfo>()
-            println(userInfo)
+//        // download file
+//        get("/downloadFile") {
+//            val file = File("files/img.jpg")
+//
+//            call.response.header(
+//                HttpHeaders.ContentDisposition,
+//                ContentDisposition.Attachment.withParameter(
+//                    ContentDisposition.Parameters.FileName, "downloadableImage.jpg"
+//                ).toString()
+//            )
+//
+//            call.respondFile(file)
+//        }
 
-            println(UserInfo::class.java.simpleName)
-
-//            call.respondText { "success" }
-
-            val userResponse = UserResponse("Mohamed", userInfo.email)
-            call.respond(userResponse)
-        }
-
-        get("/headers") {
-            call.response.headers.append("server-nane", "shopping")
-            call.response.headers.append("My-Name", "Mohamed")
-            call.respondText("Success")
-        }
-
-        // download file
-        get("/downloadFile") {
-            val file = File("files/img.jpg")
-
-            call.response.header(
-                HttpHeaders.ContentDisposition,
-                ContentDisposition.Attachment.withParameter(
-                    ContentDisposition.Parameters.FileName, "downloadableImage.jpg"
-                ).toString()
-            )
-
-            call.respondFile(file)
-        }
-
-        // open file in browser
-        get("/openFile") {
-            val file = File("files/img.jpg")
-
-            call.response.header(
-                HttpHeaders.ContentDisposition,
-                ContentDisposition.Inline.withParameter(
-                    ContentDisposition.Parameters.FileName, "openImage.jpg"
-                ).toString()
-            )
-
-            call.respondFile(file)
-        }
+//        // open file in browser
+//        get("/openFile") {
+//            val file = File("files/img.jpg")
+//
+//            call.response.header(
+//                HttpHeaders.ContentDisposition,
+//                ContentDisposition.Inline.withParameter(
+//                    ContentDisposition.Parameters.FileName, "openImage.jpg"
+//                ).toString()
+//            )
+//
+//            call.respondFile(file)
+//        }
 
 
     }
 }
-
-
-@Serializable
-data class UserInfo(
-    val email: String,
-    val password: String
-)
-
-
-@Serializable
-data class UserResponse(
-    val name: String,
-    val email: String
-)

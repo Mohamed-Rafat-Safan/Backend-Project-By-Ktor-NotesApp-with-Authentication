@@ -16,8 +16,9 @@ class TokenManager(val config: HoconApplicationConfig) {
     fun generateJWTToken(user: User): String = JWT.create()
         .withAudience(audience)
         .withIssuer(issuer)
-        .withClaim("email", user.email)
         .withClaim("userId", user.id)
+        .withClaim("name", user.fullName)
+        .withClaim("email", user.email)
         .withExpiresAt(Date(System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000)))
         .sign(Algorithm.HMAC256(secret))
 

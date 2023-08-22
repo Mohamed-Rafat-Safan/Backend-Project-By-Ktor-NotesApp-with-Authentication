@@ -4,10 +4,16 @@ import kotlinx.serialization.Serializable
 import org.mindrot.jbcrypt.BCrypt
 
 @Serializable
-data class UserLogin(
+data class UserRegisterBody(
+    val fullName: String,
     val email: String,
     val password: String
-){
+) {
+
+    fun EncryptingPassword(): String {
+        return BCrypt.hashpw(password, BCrypt.gensalt())
+    }
+
     fun isEmailValid(): Boolean {
         val pattern = Regex("^[A-Za-z](.*)([@]{1})(.{1,})(\\.)(.{1,})")
         return pattern.matches(email)

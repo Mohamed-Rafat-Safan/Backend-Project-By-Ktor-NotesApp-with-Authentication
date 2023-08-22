@@ -2,10 +2,8 @@ package com.example.routing
 
 import com.example.db.DatabaseConnection
 import com.example.entities.UserEntity
-import com.example.models.ResponseData
-import com.example.models.User
-import com.example.models.UserLogin
-import com.example.models.UserRegister
+import com.example.models.*
+import com.example.repository.UserRepo
 import com.example.utils.TokenManager
 import com.typesafe.config.ConfigFactory
 import io.ktor.http.*
@@ -22,10 +20,11 @@ import org.mindrot.jbcrypt.BCrypt
 
 fun Application.authRoutes() {
     val db = DatabaseConnection.database
-    val tokenManager = TokenManager(HoconApplicationConfig(ConfigFactory.load()))
+    val userRepo = UserRepo()
+
     routing {
         post("/register") {
-            val userRequest = call.receive<UserRegister>()
+            val userRequest = call.receive<UserRegisterBody>()
 
             val fullName = userRequest.fullName
             val email = userRequest.email
@@ -39,23 +38,18 @@ fun Application.authRoutes() {
                 return@post
             }
 
-            val userValid = db.from(UserEntity).select().where(UserEntity.email eq email).map {
-                it[UserEntity.email]
-            }.firstOrNull()
-
+            val userValid = userRepo.userValid(email)
             if (userValid != null) {
                 call.respond(HttpStatusCode.BadRequest, ResponseData("Email is already taken", false))
                 return@post
             }
 
-            val userInsert = db.insert(UserEntity) {
-                set(it.fullName, fullName)
-                set(it.email, email)
-                set(it.password, password)
-            }
-
+            val userInsert = userRepo.addUser(UserRegisterBody(fullName, email, password))
             if (userInsert == 1) {
-                call.respond(HttpStatusCode.OK, ResponseData("User Is Inserted Successfully", true))
+                val userInserted = userRepo.getUserByEmail(email)
+                val userResponse = getUserResponse(userInserted!!)
+
+                call.respond(HttpStatusCode.OK, ResponseData(userResponse, true))
             } else {
                 call.respond(HttpStatusCode.BadRequest, ResponseData("User Fail Inserted", false))
             }
@@ -63,7 +57,7 @@ fun Application.authRoutes() {
         }
 
         post("/login") {
-            val userRequest = call.receive<UserLogin>()
+            val userRequest = call.receive<UserLoginBody>()
 
             val email = userRequest.email
             val password = userRequest.password
@@ -76,13 +70,7 @@ fun Application.authRoutes() {
                 return@post
             }
 
-            val userChecked = db.from(UserEntity).select().where(UserEntity.email eq email).map {
-                val id = it[UserEntity.id]!!
-                val fullName = it[UserEntity.fullName]!!
-                val email = it[UserEntity.email]!!
-                val password = it[UserEntity.password]!!
-                User(id, fullName, email, password)
-            }.firstOrNull()
+            val userChecked = userRepo.getUserByEmail(email)
 
             if (userChecked == null) {
                 call.respond(HttpStatusCode.Unauthorized, ResponseData("Invalid email or password", false))
@@ -95,11 +83,10 @@ fun Application.authRoutes() {
                 return@post
             }
 
-            val token = tokenManager.generateJWTToken(userChecked)
+            val userResponse = getUserResponse(userChecked)
 
 
-            call.respond(HttpStatusCode.OK, ResponseData(token, true))
-
+            call.respond(HttpStatusCode.OK, ResponseData(userResponse, true))
         }
 
         authenticate {
@@ -108,13 +95,15 @@ fun Application.authRoutes() {
                 val principle = call.principal<JWTPrincipal>()
 
                 if (principle == null) {
-                    call.respond(HttpStatusCode.NotFound, ResponseData("The Token has expired", false))
                     return@get
                 }
                 val email = principle!!.payload.getClaim("email").asString()
-                val userId = principle!!.payload.getClaim("userId").asInt()
 
-                call.respondText("Hello, $email with id: $userId")
+                val userChecked = userRepo.getUserByEmail(email)!!
+
+                val userInfo = UserInfo(userChecked.id, userChecked.fullName, userChecked.email)
+
+                call.respond(HttpStatusCode.OK, ResponseData(userInfo, true))
             }
         }
 
@@ -122,8 +111,8 @@ fun Application.authRoutes() {
 }
 
 
-//fun createTableUser(){
-//    val db = DatabaseConnection.database
-//
-//    db.from().database.ex
-//}
+fun getUserResponse(user: User): UserAuthResponse {
+    val tokenManager = TokenManager(HoconApplicationConfig(ConfigFactory.load()))
+    val token = tokenManager.generateJWTToken(user)
+    return UserAuthResponse(UserInfo(user.id, user.fullName, user.email), token = token)
+}
