@@ -17,7 +17,7 @@ It also contains the authentication for the user:
 
 get("/me") : in it path the token to verify and get data of user.
 
-image on Postman for project:
+Response on Postman for project:
 
 <p align="center">
 <img src="https://github.com/Mohamed-Rafat-Safan/Project-NotesApp-with-Authentication-By-Ktor/assets/76782050/19a4ca6c-2ce8-4bd7-b58d-88f123de9af8"  />
